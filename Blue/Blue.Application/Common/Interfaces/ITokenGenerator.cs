@@ -4,5 +4,6 @@ namespace Blue.Application.Common.Interfaces;
 
 public interface ITokenGenerator
 {
-    string Generate(User user);
+    string GenerateAccessToken(User user);
+    string GenerateRefreshToken();
 }

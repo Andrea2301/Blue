@@ -28,5 +28,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.HasIndex(x => x.Email)
             .IsUnique();
+        builder.Property(u => u.Role)
+            .HasConversion<string>()
+            .IsRequired();
+
     }
 }

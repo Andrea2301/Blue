@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using Blue.Application.Auth.Commands;
 using Blue.Application.Auth.Commands.RegisterUser;
@@ -8,6 +9,7 @@ using Blue.Infrastructure.Media;
 using Blue.Infrastructure.Persistence;
 using Blue.Infrastructure.Repositories;
 using Blue.Infrastructure.Security;
+using Blue.Infrastructure.Seed;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -83,6 +85,8 @@ builder.Services.AddScoped<UpdateMediaCommand>();
 // ---------------------
 builder.Services.AddScoped<RegisterUserCommand>();
 builder.Services.AddScoped<LoginUserCommand>();
+builder.Services.AddScoped<RefreshTokenCommand>();
+
 
 // ---------------------
 // MySQL + EF Core
@@ -96,13 +100,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // ---------------------
 // JWT Authentication
 // ---------------------
-var jwtKey = builder.Configuration["Jwt:Key"]
-             ?? throw new InvalidOperationException("JWT Key not configured");
-
-var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+builder.Services.AddAuthentication("Bearer")
+    .AddJwtBearer("Bearer", options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -110,12 +109,24 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(keyBytes)
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)
+            ),
+            RoleClaimType = ClaimTypes.Role
         };
     });
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        policy => policy.WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+});
+
+
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend",
@@ -150,5 +161,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+await AdminSeed.SeedAsync(app.Services);
 
 app.Run();

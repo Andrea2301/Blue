@@ -1,12 +1,11 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using Blue.Application.Common.Interfaces;
 using Blue.Domain.Users;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-
-namespace Blue.Infrastructure.Security;
 
 public class TokenGenerator : ITokenGenerator
 {
@@ -16,31 +15,28 @@ public class TokenGenerator : ITokenGenerator
 
     public TokenGenerator(IConfiguration configuration)
     {
-        _key = configuration["Jwt:Key"]
-               ?? throw new InvalidOperationException("JWT Key not configured");
-
-        _issuer = configuration["Jwt:Issuer"]
-                  ?? throw new InvalidOperationException("JWT Issuer not configured");
-
-        _audience = configuration["Jwt:Audience"]
-                    ?? throw new InvalidOperationException("JWT Audience not configured");
+        _key = configuration["Jwt:Key"]!;
+        _issuer = configuration["Jwt:Issuer"]!;
+        _audience = configuration["Jwt:Audience"]!;
     }
 
-    public string Generate(User user)
+    // ACCESS TOKEN (JWT)
+    public string GenerateAccessToken(User user)
     {
         var keyBytes = Encoding.UTF8.GetBytes(_key);
 
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Email, user.Email)
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Role, user.Role.ToString())
         };
 
         var token = new JwtSecurityToken(
             issuer: _issuer,
             audience: _audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddHours(2),
+            expires: DateTime.UtcNow.AddMinutes(30), // ⏱️ mejor corto
             signingCredentials: new SigningCredentials(
                 new SymmetricSecurityKey(keyBytes),
                 SecurityAlgorithms.HmacSha256
@@ -48,5 +44,15 @@ public class TokenGenerator : ITokenGenerator
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    //  REFRESH TOKEN 
+    public string GenerateRefreshToken()
+    {
+        var randomBytes = new byte[64];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(randomBytes);
+
+        return Convert.ToBase64String(randomBytes);
     }
 }

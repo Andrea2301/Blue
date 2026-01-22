@@ -37,9 +37,9 @@ public class LoginUserCommand
             throw new InvalidOperationException("Invalid credentials");
 
         // Generar token
-        var token = _tokenGenerator.Generate(user);
+        var token = _tokenGenerator.GenerateAccessToken(user);
 
-        // 4️⃣ Retornar resultado
+        //  Retornar resultado
         return new LoginResponse
         {
             UserId = user.Id,

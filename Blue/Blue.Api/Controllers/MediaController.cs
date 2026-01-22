@@ -34,6 +34,8 @@ public class MediaController : ControllerBase
 // UPLOAD
 // --------------------
     [HttpPost("upload")]
+    [Authorize(Roles = "Admin")]
+
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> Upload(
         [FromForm] UploadMediaRequest request)
@@ -57,6 +59,7 @@ public class MediaController : ControllerBase
     // GET ALL
     // --------------------
     [HttpGet]
+    [Authorize(Roles = "Admin,User")]
     public async Task<IActionResult> GetAll()
         => Ok(await _getAll.ExecuteAsync());
 
@@ -64,6 +67,7 @@ public class MediaController : ControllerBase
     // GET BY ID
     // --------------------
     [HttpGet("{id:guid}")]
+    [Authorize(Roles = "Admin,User")]
     public async Task<IActionResult> GetById(Guid id)
     {
         var result = await _getById.ExecuteAsync(id);
@@ -73,6 +77,8 @@ public class MediaController : ControllerBase
 // UPDATE
 // --------------------
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Admin")]
+
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> Update(
         Guid id,
@@ -97,6 +103,8 @@ public class MediaController : ControllerBase
     // DELETE
     // --------------------
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Admin")]
+
     public async Task<IActionResult> Delete(Guid id)
     {
         await _delete.ExecuteAsync(id);
